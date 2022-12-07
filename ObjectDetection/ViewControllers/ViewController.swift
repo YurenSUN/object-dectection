@@ -279,8 +279,7 @@ extension ViewController: CameraFeedManagerDelegate {
             
             // Draws the bounding boxes and displays class names and confidence scores.
             self.drawAfterPerformingCalculations(
-                probAttrs: displayResult.probAttr,
-                probCats: displayResult.probCat,
+                probs: displayResult.probs,
                 detections: displayResult.detections,
                 withImageSize: CGSize(width: CGFloat(width), height: CGFloat(height)))
         }
@@ -290,20 +289,21 @@ extension ViewController: CameraFeedManagerDelegate {
      This method takes the results, translates the bounding box rects to the current view, draws the bounding boxes, classNames and confidence scores of inferences.
      */
     func drawAfterPerformingCalculations(
-        probAttrs: [[Float32]], probCats: [[Float32]], detections: [Detection], withImageSize: CGSize
+        probs: [[[Float32]]], detections: [Detection], withImageSize: CGSize
     ) {
         
         self.overlayView.objectOverlays = []
         self.overlayView.setNeedsDisplay()
         
-        guard !probAttrs.isEmpty else {
-            return
-        }
+//        guard  !probAttrs.isEmpty else {
+//            return
+//        }
         
         var objectOverlays: [ObjectOverlay] = []
         
         var index = 0 // index of the for loop
         for detection in detections{
+            // Bounding box from detection
             guard let category = detection.categories.first else { continue }
 
             // Translates bounding box rect to current view.
@@ -331,41 +331,29 @@ extension ViewController: CameraFeedManagerDelegate {
             }
             
             // Format the cloth detection strings
-            let probAttr = probAttrs[index]
-            let probCat = probCats[index]
-            index = index + 1
             var objectDescription = ""
-            
-            // Get labels for attributes and categories
-            guard let labelPath_cat = Bundle.main.path(forResource: "list_category_cloth", ofType: "txt") else { return}
-            var fileContents = try? String(contentsOfFile: labelPath_cat)
-            guard var labels_cat = fileContents?.components(separatedBy: "\n") else { return}
-            
-            // Split each line
-            for i in labels_cat.indices {
-                labels_cat[i] = labels_cat[i].components(separatedBy: " ")[0]
-                if (probCat[i] < scoreThreshold) {continue}
-                // print(i, "\(labels_cat[i]): \(probCat[i])")
+            for i in 0 ..< probs.count {
+                let curProb = probs[index][i]
+                let curLabelFile = self.detectionModelAttr.labelFiles[i]
+                guard let labelPath_cat = Bundle.main.path(
+                    forResource: curLabelFile.name,
+                    ofType: curLabelFile.extension)
+                    else {print("Failed to load the label file with name: \(curLabelFile.name)."); return}
+                var fileContents = try? String(contentsOfFile: labelPath_cat)
+                // TODO: may load earlier to save time
+                guard var labels = fileContents?.components(separatedBy: "\n") else {return}
                 
-                if (objectDescription != ""){objectDescription = objectDescription + "\n"}
-                objectDescription = objectDescription + String(format: "\(labels_cat[i]) (%.2f)",probCat[i])
-                
+                for i in labels.indices {
+                    labels[i] = labels[i].components(separatedBy: " ")[0]
+                    if (curProb[i] < scoreThreshold) {continue}
+                    // print(i, "\(labels_cat[i]): \(probCat[i])")
+                    
+                    if (objectDescription != ""){objectDescription = objectDescription + "\n"}
+                    objectDescription = objectDescription + String(format: "\(labels[i]) (%.2f)",curProb[i])
+                    
+                }
             }
-            
-            // Get labels for attributes and categories
-            guard let labelPath_attr = Bundle.main.path(forResource: "list_attr_cloth", ofType: "txt") else { return }
-            fileContents = try? String(contentsOfFile: labelPath_attr)
-            guard var labels_attr = fileContents?.components(separatedBy: "\n") else { return }
-            
-            // Split each line
-            for i in labels_attr.indices {
-                labels_attr[i] = labels_attr[i].components(separatedBy: " ")[0]
-                if (probCat[i] < scoreThreshold) {continue}
-                
-                // print(i, "\(labels_attr[i]): \(probAttr[i])")
-                if (objectDescription != ""){objectDescription = objectDescription + "\n"}
-                objectDescription = objectDescription + String(format: "\(labels_attr[i]) (%.2f)",probAttr[i])
-            }
+            index = index + 1
             
             // Detection and attributes/categories above threshold exists
             if (objectDescription == ""){print("no detection over treshold"); return}
@@ -383,53 +371,8 @@ extension ViewController: CameraFeedManagerDelegate {
                 font: self.displayFont)
             objectOverlays.append(objectOverlay)
         }
+
         self.draw(objectOverlays: objectOverlays)
-        
-//        // Go through landmark indices to figure out the bounding box
-//        var xStart = Double(landmarks[0])
-//        var yStart = Double(landmarks[1])
-//        var xSize = Double(0)
-//        var ySize = Double(0)
-//        for i in 2 ..< Int(landmarks.count / 2) {
-//            let curX = Double(landmarks[i * 2])
-//            let curY = Double(landmarks[1 + i * 2])
-//
-//            // Update start and size
-//            if (curX < xStart) {
-//                xSize = xSize + xStart - curX
-//                xStart = curX
-//            } else if (curX > xStart + xSize){
-//                xSize = curX - xStart
-//            }
-//            if (curY < yStart) {
-//                ySize = ySize + yStart - curY
-//                yStart = curY
-//            }else if (curY > yStart + ySize){
-//                ySize = curY - yStart
-//            }
-//
-//            // print("bounding box:", curX, curY, xStart, yStart, xSize, ySize)
-//
-////            // show bounding boxes TODO: delete after debugging
-////            let curName = String(i)
-////            let curObjectOverlay = ObjectOverlay(
-////                name: curName,
-////                borderRect: CGRect(origin: CGPoint(x: curX * self.overlayView.bounds.maxX, y:curY * self.overlayView.bounds.maxY), size: CGSize(width: 5, height: 5)),
-////                nameStringSize: curName.size(withAttributes: [.font: self.displayFont]),
-////                color: displayColor,
-////                font: self.displayFont)
-////            objectOverlays.append(curObjectOverlay)
-//        }
-        
-//        // Resize to overlyview size
-//        xStart = xStart * self.overlayView.bounds.maxX
-//        yStart = yStart * self.overlayView.bounds.maxY
-//        xSize = xSize * self.overlayView.bounds.maxX
-//        ySize = ySize * self.overlayView.bounds.maxY
-        
-//        print("Bounding box final", xStart, yStart, xSize, ySize)
-        
-        // Hands off drawing to the OverlayView
     }
     
     /** Calls methods to update overlay view with detected bounding boxes and class names.
@@ -592,6 +535,14 @@ enum ModelTypeAttribute: CaseIterable {
         switch self {
         case .resnet50attr:
             return "resnet50attr"
+        }
+    }
+    
+    var labelFiles: [FileInfo] {
+        switch self {
+        case .resnet50attr:
+            // output 0 - categories, output 1 - attributes
+            return [FileInfo("list_category_cloth", "txt"),FileInfo("list_attr_cloth", "txt")]
         }
     }
 }

@@ -1,1 +1,5 @@
 *DS_Store*
+Pods/*
+build/*
+ObjectDetection/TFLite/*.tflite
+ObjectDetection/TFLite/*.txt

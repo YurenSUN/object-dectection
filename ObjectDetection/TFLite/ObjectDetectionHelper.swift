@@ -19,8 +19,8 @@ import TensorFlowLiteTaskVision
 /// Stores results for a particular frame that was successfully run through the `Interpreter`.
 struct Result {
     let inferenceTime: Double
-    let probAttr: [[Float32]]
-    let probCat: [[Float32]]
+    let probs: [[[Float32]]]
+//    let probCat: [[Float32]]
     let detections: [Detection]
 }
 
@@ -165,8 +165,10 @@ class ObjectDetectionHelper: NSObject {
 
         // Arrays to return
         var person_detections: [Detection] = []
-        var probAttrs: [[Float32]] = []
-        var probCats: [[Float32]] = []
+        var probs: [[[Float32]]] = []
+        
+        // Compute time interval from detection of person to attributes
+        let startDate = Date()
         
         // Detector
         do {
@@ -175,7 +177,6 @@ class ObjectDetectionHelper: NSObject {
             for detection in detections{
                 // Only proceed with detected person and find attributes/categories of the person
                 guard let category = detection.categories.first else { continue }
-                print(category.label)
                 if (category.label != "person") {continue}
                 // Append current detection
                 person_detections.append(detection)
@@ -184,13 +185,7 @@ class ObjectDetectionHelper: NSObject {
                 let convertedRect = detection.boundingBox
                 let origin = convertedRect.origin
                 let size = convertedRect.size
-//                let startX = Int(origin.x * 224 / width)
-//                let startY = Int(origin.y * 224 / height)
-//                let endX = startX + Int(size.width * 224 / width)
-//                let endY = startY + Int(size.height * 224 / height)
-                print("origin", origin.x / width, origin.y / height)
-                print("size", size.width / width, size.height / height)
-                
+
                 // Normalize and transform image, then put into Data object
                 // Modified from - https://firebase.google.com/docs/ml/ios/use-custom-models
                 let croppedImage = ciImage.cropped(to: convertedRect)
@@ -233,94 +228,31 @@ class ObjectDetectionHelper: NSObject {
                 
                 // Attribute prediction
                 try interpreterAttr.copy(inputData, toInputAt: 0)
-                let startDate = Date()
-                
                 try interpreterAttr.invoke()
                 
-                // Output probabilities for categories
-                var outputTensor = try interpreterAttr.output(at: 0)
-                // Copy output to `Data` to process the inference results.
-                let outputSize_cat = outputTensor.shape.dimensions.reduce(1, {x, y in x * y})
-                let outputData_cat = UnsafeMutableBufferPointer<Float32>.allocate(capacity: outputSize_cat)
-                outputTensor.data.copyBytes(to: outputData_cat)
+                var curProbs: [[Float32]] = []
+                for i in 0 ..< interpreterAttr.outputTensorCount{
+                    let outputTensor = try interpreterAttr.output(at: i)
+                    // Copy output to `Data` to process the inference results.
+                    let outputSize = outputTensor.shape.dimensions.reduce(1, {x, y in x * y})
+                    let outputData = UnsafeMutableBufferPointer<Float32>.allocate(capacity: outputSize)
+                    outputTensor.data.copyBytes(to: outputData)
+                    
+                    curProbs.append(Array(outputData))
+                }
                 
-                probCats.append(Array(outputData_cat))
-                
-                // print("Output data cat", Array(outputData_cat), Array(outputData_cat).count)
-                
-                // Output probabilities for attributes
-                outputTensor = try interpreterAttr.output(at: 1)
-                let outputSize_attr = outputTensor.shape.dimensions.reduce(1, {x, y in x * y})
-                let outputData_attr = UnsafeMutableBufferPointer<Float32>.allocate(capacity: outputSize_attr)
-                outputTensor.data.copyBytes(to: outputData_attr)
-                
-                probAttrs.append(Array(outputData_attr))
-                
-                // print("Output data 2", Array(outputData_attr), Array(outputData_attr).count)
-                
-                let interval = Date().timeIntervalSince(startDate) * 1000
-                
-                return Result(inferenceTime: interval, probAttr: probAttrs, probCat: probCats, detections: person_detections)
+                probs.append(curProbs)
             }
+            
         } catch let error {
             print("Failed to invoke the interpreter with error: \(error.localizedDescription)")
             return nil
         }
         
+        let interval = Date().timeIntervalSince(startDate) * 1000
+        print("Interval", interval)
         
-//        // Run inference
-//        do {
-//            // Attribute prediction
-//            try interpreterAttr.copy(inputData, toInputAt: 0)
-//            let startDate = Date()
-//
-//            try interpreterAttr.invoke()
-//
-//            // Output probabilities for categories
-//            var outputTensor = try interpreterAttr.output(at: 0)
-//            // Copy output to `Data` to process the inference results.
-//            let outputSize_cat = outputTensor.shape.dimensions.reduce(1, {x, y in x * y})
-//            let outputData_cat = UnsafeMutableBufferPointer<Float32>.allocate(capacity: outputSize_cat)
-//            outputTensor.data.copyBytes(to: outputData_cat)
-//
-//            // print("Output data cat", Array(outputData_cat), Array(outputData_cat).count)
-//
-//            // Output probabilities for attributes
-//            outputTensor = try interpreterAttr.output(at: 1)
-//            let outputSize_attr = outputTensor.shape.dimensions.reduce(1, {x, y in x * y})
-//            let outputData_attr = UnsafeMutableBufferPointer<Float32>.allocate(capacity: outputSize_attr)
-//            outputTensor.data.copyBytes(to: outputData_attr)
-//
-//            // print("Output data 2", Array(outputData_attr), Array(outputData_attr).count)
-//
-//            let interval = Date().timeIntervalSince(startDate) * 1000
-//
-//            // Attribute prediction
-//            try interpreterLandmark.copy(inputData, toInputAt: 0)
-//            try interpreterLandmark.invoke()
-//
-//            // Output probabilities for categories, landmarks at output 1
-//            outputTensor = try interpreterLandmark.output(at: 1)
-//            // Copy output to `Data` to process the inference results.
-//            let outputSize_landmark = outputTensor.shape.dimensions.reduce(1, {x, y in x * y})
-//            let outputData_landmark = UnsafeMutableBufferPointer<Float32>.allocate(capacity: outputSize_landmark)
-//            outputTensor.data.copyBytes(to: outputData_landmark)
-//
-//            // Resize to the propotional of image
-//            var outputData_landmark_modified = Array(outputData_landmark)
-//            for i in 0 ..< Int(outputSize_landmark / 2) {
-//                outputData_landmark_modified[i * 2] = outputData_landmark_modified[i * 2] / 224
-//                outputData_landmark_modified[1 + 2 * i] = outputData_landmark_modified[1 + 2 * i] / 224
-//            }
-//
-//            // print("output landmark", Array(outputData_landmark), outputData_landmark_modified)
-//            return Result(inferenceTime: interval, probAttr: Array(outputData_attr), probCat: Array(outputData_cat), landmark: outputData_landmark_modified)
-//
-//        } catch let error {
-//            print("Failed to invoke the interpreter with error: \(error.localizedDescription)")
-//            return nil
-//        }
-    return nil
+        return Result(inferenceTime: interval, probs: probs, detections: person_detections)
     }
 }
 
