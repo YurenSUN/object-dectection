@@ -36,7 +36,7 @@ class ObjectDetectionHelper: NSObject {
     
     private var interpreterAttr: Interpreter
     
-    private var interpreterLandmark: Interpreter
+//    private var interpreterLandmark: Interpreter
     
     private var detector: ObjectDetector
     
@@ -86,7 +86,7 @@ class ObjectDetectionHelper: NSObject {
             // https://www.tensorflow.org/lite/guide/inference#load_and_run_a_model_in_swift
             // Initialize an interpreter with the model.
             interpreterAttr = try Interpreter(modelPath: modelPath)
-            try interpreterAttr.resizeInput(at: 0, to: [1, 3, 224, 224])
+            try interpreterAttr.resizeInput(at: 0, to: [1, 224, 224, 3])
             
             // Allocate memory for the model's input `Tensor`s.
             try interpreterAttr.allocateTensors()
@@ -95,30 +95,30 @@ class ObjectDetectionHelper: NSObject {
             return nil
         }
         
-        // Interpretor for detections
-        modelFilename = modelFileInfoLandmark.name
-        // Construct the path to the model file.
-        guard let modelPath = Bundle.main.path(
-            forResource: modelFileInfoLandmark.name,
-            ofType: modelFileInfoLandmark.extension
-        )
-        else {
-            print("Failed to load the model file with name: \(modelFilename).")
-            return nil
-        }
+//        // Interpretor for detections
+//        modelFilename = modelFileInfoLandmark.name
+//        // Construct the path to the model file.
+//        guard let modelPath = Bundle.main.path(
+//            forResource: modelFileInfoLandmark.name,
+//            ofType: modelFileInfoLandmark.extension
+//        )
+//        else {
+//            print("Failed to load the model file with name: \(modelFilename).")
+//            return nil
+//        }
         
-        do {
-            // https://www.tensorflow.org/lite/guide/inference#load_and_run_a_model_in_swift
-            // Initialize an interpreter with the model.
-            interpreterLandmark = try Interpreter(modelPath: modelPath)
-            try interpreterLandmark.resizeInput(at: 0, to: [1, 3, 224, 224])
-            
-            // Allocate memory for the model's input `Tensor`s.
-            try interpreterLandmark.allocateTensors()
-        } catch let error {
-            print("Failed to create the interpreter with error: \(error.localizedDescription)")
-            return nil
-        }
+//        do {
+//            // https://www.tensorflow.org/lite/guide/inference#load_and_run_a_model_in_swift
+//            // Initialize an interpreter with the model.
+//            interpreterLandmark = try Interpreter(modelPath: modelPath)
+//            try interpreterLandmark.resizeInput(at: 0, to: [1, 3, 224, 224])
+//
+//            // Allocate memory for the model's input `Tensor`s.
+//            try interpreterLandmark.allocateTensors()
+//        } catch let error {
+//            print("Failed to create the interpreter with error: \(error.localizedDescription)")
+//            return nil
+//        }
         
         // Detector
         // https://tfhub.dev/tensorflow/tfjs-model/ssd_mobilenet_v1/1/default/1
@@ -167,9 +167,9 @@ class ObjectDetectionHelper: NSObject {
         var person_detections: [Detection] = []
         var probs: [[[Float32]]] = []
         
-        // Compute time interval from detection of person to attributes
+        // Compute interval to return
         let startDate = Date()
-        
+
         // Detector
         do {
             let detectionResult = try detector.detect(mlImage: mlImage)
@@ -208,27 +208,39 @@ class ObjectDetectionHelper: NSObject {
                 var inputData = Data()
                 
                 // Image cropped from detected bounding boxes
-                for offset_inc in [1,2,3]{
-                    for row in 0 ..< 224 {
-                        for col in 0 ..< 224 {
-                            let offset = 4 * (row * context.width + col)
-                            // (Ignore offset 0, the unused alpha channel)
-                            let color = imageData.load(fromByteOffset: offset+offset_inc, as: UInt8.self)
-                            
-                            var normalized = Float32(color) / 255.0
-                            
-                            let elementSize = MemoryLayout.size(ofValue: normalized)
-                            var bytes = [UInt8](repeating: 0, count: elementSize)
-                            
-                            memcpy(&bytes, &normalized, elementSize)
-                            inputData.append(bytes, count: elementSize)
-                        }
+                for row in 0 ..< 224 {
+                    for col in 0 ..< 224 {
+                        let offset = 4 * (row * context.width + col)
+                        // (Ignore offset 0, the unused alpha channel)
+                        let red = imageData.load(fromByteOffset: offset+1, as: UInt8.self)
+                        let green = imageData.load(fromByteOffset: offset+2, as: UInt8.self)
+                        let blue = imageData.load(fromByteOffset: offset+3, as: UInt8.self)
+
+                        // Normalize as mmfashion
+                        var normalizedRed = (Float32(red) - 255.0 * 0.485) / (255 * 0.229)
+                        var normalizedGreen = (Float32(green) - 255.0 * 0.456) / (255 * 0.224)
+                        var normalizedBlue = (Float32(blue) - 255.0 * 0.406) / (255 * 0.225)
+                        
+                        // Append normalized values to Data object in RGB order.
+                        let elementSize = MemoryLayout.size(ofValue: normalizedRed)
+                        var bytes = [UInt8](repeating: 0, count: elementSize)
+                        memcpy(&bytes, &normalizedRed, elementSize)
+                        inputData.append(&bytes, count: elementSize)
+                        memcpy(&bytes, &normalizedGreen, elementSize)
+                        inputData.append(&bytes, count: elementSize)
+                        memcpy(&bytes, &normalizedBlue, elementSize)
+                        inputData.append(&bytes, count: elementSize)
                     }
                 }
                 
                 // Attribute prediction
                 try interpreterAttr.copy(inputData, toInputAt: 0)
+                
+                // Compute time interval from detection of person to attributes
+                let curStartDate = Date()
                 try interpreterAttr.invoke()
+                let interval = Date().timeIntervalSince(curStartDate) * 1000
+                print("Interval", interval)
                 
                 var curProbs: [[Float32]] = []
                 for i in 0 ..< interpreterAttr.outputTensorCount{
@@ -250,8 +262,6 @@ class ObjectDetectionHelper: NSObject {
         }
         
         let interval = Date().timeIntervalSince(startDate) * 1000
-        print("Interval", interval)
-        
         return Result(inferenceTime: interval, probs: probs, detections: person_detections)
     }
 }

@@ -295,9 +295,9 @@ extension ViewController: CameraFeedManagerDelegate {
         self.overlayView.objectOverlays = []
         self.overlayView.setNeedsDisplay()
         
-//        guard  !probAttrs.isEmpty else {
-//            return
-//        }
+        guard  !probs.isEmpty else {
+            return
+        }
         
         var objectOverlays: [ObjectOverlay] = []
         
@@ -343,13 +343,13 @@ extension ViewController: CameraFeedManagerDelegate {
                 // TODO: may load earlier to save time
                 guard var labels = fileContents?.components(separatedBy: "\n") else {return}
                 
-                for i in labels.indices {
-                    labels[i] = labels[i].components(separatedBy: " ")[0]
-                    if (curProb[i] < scoreThreshold) {continue}
-                    // print(i, "\(labels_cat[i]): \(probCat[i])")
+                for j in labels.indices {
+                    labels[j] = labels[j].components(separatedBy: " ")[0]
+                    if (curProb[j] < scoreThreshold) {continue}
+                    // print(i, "\(labels_cat[j]): \(probCat[j])")
                     
                     if (objectDescription != ""){objectDescription = objectDescription + "\n"}
-                    objectDescription = objectDescription + String(format: "\(labels[i]) (%.2f)",curProb[i])
+                    objectDescription = objectDescription + String(format: "\(labels[j]) (%.2f)",curProb[j])
                     
                 }
             }
@@ -523,11 +523,14 @@ extension ViewController {
 /// TFLite model types for attributes
 enum ModelTypeAttribute: CaseIterable {
     case resnet50attr
+    case resnet50attrCoarse
     
     var modelFileInfo: FileInfo {
         switch self {
         case .resnet50attr:
             return FileInfo("resnet50-attr", "tflite")
+        case .resnet50attrCoarse:
+            return FileInfo("tf_resnet50_attr_coarse", "tflite")
         }
     }
     
@@ -535,12 +538,17 @@ enum ModelTypeAttribute: CaseIterable {
         switch self {
         case .resnet50attr:
             return "resnet50attr"
+        case .resnet50attrCoarse:
+            return "resnet50attrCoarse"
         }
     }
     
     var labelFiles: [FileInfo] {
         switch self {
         case .resnet50attr:
+            // output 0 - categories, output 1 - attributes
+            return [FileInfo("list_attr_cloth", "txt"),FileInfo("list_category_cloth", "txt")]
+        case .resnet50attrCoarse:
             // output 0 - categories, output 1 - attributes
             return [FileInfo("list_category_cloth", "txt"),FileInfo("list_attr_cloth", "txt")]
         }
@@ -572,7 +580,7 @@ struct ConstantsDefault {
     static let modelTypeAttr: ModelTypeAttribute = .resnet50attr
     static let modelTypeLandmark: ModelTypeLandmark = .resnet50landmark
     static let threadCount = 1
-    static let scoreThreshold: Float = 0.6
+    static let scoreThreshold: Float = 0.65
     static let maxResults: Int = 10
     static let theadCountLimit = 10
 }

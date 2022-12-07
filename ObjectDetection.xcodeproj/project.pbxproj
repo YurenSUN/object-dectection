@@ -14,6 +14,8 @@
 		A481C2B6293C0A5F0055D847 /* list_category_cloth.txt in Resources */ = {isa = PBXBuildFile; fileRef = A481C2B4293C0A5F0055D847 /* list_category_cloth.txt */; };
 		A481C2B7293C0A5F0055D847 /* list_attr_cloth.txt in Resources */ = {isa = PBXBuildFile; fileRef = A481C2B5293C0A5F0055D847 /* list_attr_cloth.txt */; };
 		A481C2B9293C18CD0055D847 /* resnet50-landmark.tflite in Resources */ = {isa = PBXBuildFile; fileRef = A481C2B8293C157A0055D847 /* resnet50-landmark.tflite */; };
+		A4AD314B293E72E600B8C201 /* list_attr_cloth_coarse.txt in Resources */ = {isa = PBXBuildFile; fileRef = A4AD314A293E72E600B8C201 /* list_attr_cloth_coarse.txt */; };
+		A4AD314C293E733D00B8C201 /* tf_resnet50_attr_coarse.tflite in Resources */ = {isa = PBXBuildFile; fileRef = A4AD3149293E72DF00B8C201 /* tf_resnet50_attr_coarse.tflite */; };
 		A4C7B5A1293B2F9900B4381F /* resnet50-attr.tflite in Resources */ = {isa = PBXBuildFile; fileRef = A4C7B5A0293B2F8700B4381F /* resnet50-attr.tflite */; };
 		AA119EA2217F337300DE46CF /* ObjectDetectionHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA119EA1217F337300DE46CF /* ObjectDetectionHelper.swift */; };
 		AA16E59D218081AA00D9E153 /* InferenceViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA16E59C218081AA00D9E153 /* InferenceViewController.swift */; };
@@ -36,6 +38,8 @@
 		A481C2B4293C0A5F0055D847 /* list_category_cloth.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = list_category_cloth.txt; path = ObjectDetection/TFLite/list_category_cloth.txt; sourceTree = SOURCE_ROOT; };
 		A481C2B5293C0A5F0055D847 /* list_attr_cloth.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = list_attr_cloth.txt; path = ObjectDetection/TFLite/list_attr_cloth.txt; sourceTree = SOURCE_ROOT; };
 		A481C2B8293C157A0055D847 /* resnet50-landmark.tflite */ = {isa = PBXFileReference; lastKnownFileType = file; path = "resnet50-landmark.tflite"; sourceTree = "<group>"; };
+		A4AD3149293E72DF00B8C201 /* tf_resnet50_attr_coarse.tflite */ = {isa = PBXFileReference; lastKnownFileType = file; path = tf_resnet50_attr_coarse.tflite; sourceTree = "<group>"; };
+		A4AD314A293E72E600B8C201 /* list_attr_cloth_coarse.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = list_attr_cloth_coarse.txt; path = ObjectDetection/TFLite/list_attr_cloth_coarse.txt; sourceTree = SOURCE_ROOT; };
 		A4C7B5A0293B2F8700B4381F /* resnet50-attr.tflite */ = {isa = PBXFileReference; lastKnownFileType = file; path = "resnet50-attr.tflite"; sourceTree = "<group>"; };
 		AA119EA1217F337300DE46CF /* ObjectDetectionHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObjectDetectionHelper.swift; sourceTree = "<group>"; };
 		AA16E59C218081AA00D9E153 /* InferenceViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InferenceViewController.swift; sourceTree = "<group>"; };
@@ -68,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				A481C2B8293C157A0055D847 /* resnet50-landmark.tflite */,
+				A4AD3149293E72DF00B8C201 /* tf_resnet50_attr_coarse.tflite */,
 				AA119EA1217F337300DE46CF /* ObjectDetectionHelper.swift */,
 				A4486B76293C676D00579A64 /* ssd_mobilenet_v1_1_default_1.tflite */,
 				A481C2B1293BFF820055D847 /* list_attr_cloth.txt */,
@@ -124,6 +129,7 @@
 			children = (
 				A481C2B5293C0A5F0055D847 /* list_attr_cloth.txt */,
 				A481C2B4293C0A5F0055D847 /* list_category_cloth.txt */,
+				A4AD314A293E72E600B8C201 /* list_attr_cloth_coarse.txt */,
 				AA16E59C218081AA00D9E153 /* InferenceViewController.swift */,
 				AA9AC5E1212D4520000B4E9D /* ViewController.swift */,
 			);
@@ -217,6 +223,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A4AD314C293E733D00B8C201 /* tf_resnet50_attr_coarse.tflite in Resources */,
 				A4486B77293C67D900579A64 /* ssd_mobilenet_v1_1_default_1.tflite in Resources */,
 				A481C2B9293C18CD0055D847 /* resnet50-landmark.tflite in Resources */,
 				A481C2B7293C0A5F0055D847 /* list_attr_cloth.txt in Resources */,
@@ -227,6 +234,7 @@
 				A481C2B2293BFF820055D847 /* list_category_cloth.txt in Resources */,
 				A481C2B6293C0A5F0055D847 /* list_category_cloth.txt in Resources */,
 				AA9AC5A4212D39FC000B4E9D /* Main.storyboard in Resources */,
+				A4AD314B293E72E600B8C201 /* list_attr_cloth_coarse.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
