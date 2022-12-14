@@ -86,7 +86,6 @@ class ObjectDetectionHelper: NSObject {
             // https://www.tensorflow.org/lite/guide/inference#load_and_run_a_model_in_swift
             // Initialize an interpreter with the model.
             interpreterAttr = try Interpreter(modelPath: modelPath)
-            try interpreterAttr.resizeInput(at: 0, to: [1, 224, 224, 3])
             
             // Allocate memory for the model's input `Tensor`s.
             try interpreterAttr.allocateTensors()
@@ -95,7 +94,7 @@ class ObjectDetectionHelper: NSObject {
             return nil
         }
         
-//        // Interpretor for detections
+//        // Interpretor for landmarks, not using due to low accuracy
 //        modelFilename = modelFileInfoLandmark.name
 //        // Construct the path to the model file.
 //        guard let modelPath = Bundle.main.path(
@@ -120,7 +119,7 @@ class ObjectDetectionHelper: NSObject {
 //            return nil
 //        }
         
-        // Detector
+        // Detector for people
         // https://tfhub.dev/tensorflow/tfjs-model/ssd_mobilenet_v1/1/default/1
         guard let modelPath = Bundle.main.path(
             forResource: "ssd_mobilenet_v1_1_default_1",
@@ -178,6 +177,7 @@ class ObjectDetectionHelper: NSObject {
                 // Only proceed with detected person and find attributes/categories of the person
                 guard let category = detection.categories.first else { continue }
                 if (category.label != "person") {continue}
+                if (category.score < 0.6) {continue}
                 // Append current detection
                 person_detections.append(detection)
                 
@@ -203,7 +203,7 @@ class ObjectDetectionHelper: NSObject {
                     return nil
                 }
                 context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
-                guard let imageData = context.data else { print("no CG image"); return nil }
+                guard let imageData = context.data else {print("no CG image"); return nil }
                 
                 var inputData = Data()
                 

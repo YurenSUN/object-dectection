@@ -332,7 +332,7 @@ extension ViewController: CameraFeedManagerDelegate {
             
             // Format the cloth detection strings
             var objectDescription = ""
-            for i in 0 ..< probs.count {
+            for i in 0 ..< probs[index].count {
                 let curProb = probs[index][i]
                 let curLabelFile = self.detectionModelAttr.labelFiles[i]
                 guard let labelPath_cat = Bundle.main.path(
@@ -580,7 +580,7 @@ struct ConstantsDefault {
     static let modelTypeAttr: ModelTypeAttribute = .resnet50attr
     static let modelTypeLandmark: ModelTypeLandmark = .resnet50landmark
     static let threadCount = 1
-    static let scoreThreshold: Float = 0.65
+    static let scoreThreshold: Float = 0.60
     static let maxResults: Int = 10
     static let theadCountLimit = 10
 }
